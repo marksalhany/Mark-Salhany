@@ -15,7 +15,10 @@ from PIL import Image, ImageTk
 from PIL import ImageDraw, ImageFont
 import numpy as np
 
-
+import sys
+import requests
+from packaging import version
+from datetime import datetime, timedelta
 
 import re
 import random
@@ -27,6 +30,64 @@ import threading
 VERSION = "1.2.0 Beta"
 
 
+# Add these imports at the top of your main.py
+import sys
+import requests
+from packaging import version
+import json
+from datetime import datetime, timedelta
+
+class VersionChecker:
+    def __init__(self):
+        self.version = VERSION  # Your current version constant
+        self.last_check_file = "last_update_check.json"
+        self.update_url = "https://api.github.com/repos/YOUR_USERNAME/EC0FileBuddy/releases/latest"
+        # Or use any other URL where you'll host version info
+        
+    def should_check_updates(self):
+        """Check if we should check for updates (once per day)"""
+        try:
+            if os.path.exists(self.last_check_file):
+                with open(self.last_check_file, 'r') as f:
+                    data = json.load(f)
+                    last_check = datetime.fromisoformat(data['last_check'])
+                    if datetime.now() - last_check < timedelta(days=1):
+                        return False
+            return True
+        except:
+            return True
+            
+    def save_last_check(self):
+        """Save the timestamp of the last update check"""
+        try:
+            with open(self.last_check_file, 'w') as f:
+                json.dump({
+                    'last_check': datetime.now().isoformat()
+                }, f)
+        except:
+            pass
+            
+    def check_for_updates(self):
+        """Check for new versions and notify if available"""
+        if not self.should_check_updates():
+            return
+            
+        try:
+            response = requests.get(self.update_url, timeout=5)
+            if response.status_code == 200:
+                latest_version = response.json()['tag_name'].lstrip('v')
+                if version.parse(latest_version) > version.parse(self.version):
+                    messagebox.showinfo(
+                        "Update Available",
+                        f"A new version ({latest_version}) of EC0 File Buddy is available!\n\n"
+                        f"You are currently running version {self.version}\n\n"
+                        "Please contact Mark Salhany for the latest version."
+                    )
+            self.save_last_check()
+        except Exception as e:
+            # Silently fail for update checks
+            pass
+
 class SettingsManager:
     def __init__(self):
         self.settings_file = 'settings.json'
@@ -35,6 +96,7 @@ class SettingsManager:
             'mtexec_path': r"C:\Program Files (x86)\MetroCount v506\Programs\MTExec.exe",            
         }
         self.settings = self.load_settings()
+        
         
     def load_settings(self):
         """Load settings from JSON file"""
@@ -209,44 +271,6 @@ class WorkingTrackerDialog:
                 messagebox.showerror("Error", "Please enter a valid Google Sheets URL")
         else:
             messagebox.showerror("Error", "Please enter a URL")
-
-def add_settings_menu(root, settings_manager):
-    """Add settings menu to the root window"""
-    menubar = tk.Menu(root)
-    root.config(menu=menubar)
-    
-    # Create Settings menu
-    settings_menu = tk.Menu(menubar, tearoff=0)
-    menubar.add_cascade(label="Settings", menu=settings_menu)
-    
-    # Add menu items
-    settings_menu.add_command(
-        label="Set Working Tracker",
-        command=lambda: WorkingTrackerDialog(root, settings_manager)
-    )
-    
-    settings_menu.add_command(
-        label="Set MTExec Path",
-        command=lambda: MTExecPathDialog(root, settings_manager)
-    )
-    
-    settings_menu.add_command(
-        label="Set Output Directory",
-        command=lambda: OutputDirectoryDialog(root, settings_manager)
-    )
-    
-    # Add separator and About option
-    settings_menu.add_separator()
-    settings_menu.add_command(
-        label="About",
-        command=lambda: messagebox.showinfo(
-            "About Ec0 File Buddy",
-            f"Version: {VERSION}\n\n" +
-            "Created by Mark Salhany\n" +
-            "IDAX Data Solutions\n\n" +
-            "For support: mark.salhany@idaxdata.com"
-        )
-    )
 
 class ToolTip:
     def __init__(self, widget, text):
@@ -834,6 +858,7 @@ class TrafficProcessor:
             'light_gray': '#f1f3f4'  # Background gray
         }
                 
+        self.check_credentials()
         self.settings_manager = SettingsManager()                
         self.project_data = None
         self.ec0_files = []
@@ -883,6 +908,146 @@ class TrafficProcessor:
             self.update_status("Warning: MTExec.exe not found at configured path. " + 
                               "Please check Settings > Set MTExec Path", tag='warning')
    
+    def check_credentials(self):
+        """Check for required credentials and configuration"""
+        if not os.path.exists('client_secrets.json'):
+            messagebox.showerror(
+                "Configuration Error",
+                "client_secrets.json not found!\n\n"
+                "Please place the client_secrets.json file in the same directory as the executable.\n\n"
+                "Contact mark.salhany@idaxdata.com for assistance."
+            )
+            sys.exit(1)
+            
+            # Check for settings file on first run
+            if not os.path.exists('settings.json'):
+                self.show_first_run_dialog()
+                
+    def show_first_run_dialog(self):
+        """Show first-run configuration dialog"""
+        dialog = tk.Toplevel()
+        dialog.title("First Time Setup")
+        dialog.geometry("600x400")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center dialog
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+        y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Welcome message
+        ttk.Label(
+            dialog,
+            text="Welcome to EC0 File Buddy!",
+            font=('TkDefaultFont', 12, 'bold')
+        ).pack(pady=20)
+        
+        ttk.Label(
+            dialog,
+            text="Let's set up a few things before we get started.",
+            wraplength=500
+        ).pack(pady=10)
+        
+        # MTExec path frame
+        mtexec_frame = ttk.LabelFrame(dialog, text="MTExec Location", padding=10)
+        mtexec_frame.pack(fill='x', padx=20, pady=10)
+        
+        self.mtexec_var = tk.StringVar(
+            value=r"C:\Program Files (x86)\MetroCount v506\Programs\MTExec.exe"
+        )
+        
+        ttk.Entry(
+            mtexec_frame,
+            textvariable=self.mtexec_var,
+            width=60
+        ).pack(side='left', padx=5)
+        
+        ttk.Button(
+            mtexec_frame,
+            text="Browse",
+            command=lambda: self.browse_mtexec(self.mtexec_var)
+        ).pack(side='left')
+        
+        # Working tracker frame
+        tracker_frame = ttk.LabelFrame(dialog, text="Working Tracker URL", padding=10)
+        tracker_frame.pack(fill='x', padx=20, pady=10)
+        
+        self.tracker_var = tk.StringVar()
+        
+        ttk.Entry(
+            tracker_frame,
+            textvariable=self.tracker_var,
+            width=70
+        ).pack(fill='x')
+        
+        # Save button
+        ttk.Button(
+            dialog,
+            text="Save Configuration",
+            command=lambda: self.save_first_run_config(dialog)
+        ).pack(pady=20)
+        
+    def browse_mtexec(self, var):
+        """Browse for MTExec.exe"""
+        filename = filedialog.askopenfilename(
+            title="Locate MTExec.exe",
+            initialdir="C:/Program Files (x86)/MetroCount v506/Programs",
+            filetypes=[("Executable files", "*.exe")]
+        )
+        if filename:
+            var.set(filename)
+            
+    def save_first_run_config(self, dialog):
+        """Save first-run configuration"""
+        mtexec_path = self.mtexec_var.get().strip()
+        tracker_url = self.tracker_var.get().strip()
+        
+        if not mtexec_path or not os.path.exists(mtexec_path):
+            messagebox.showerror(
+                "Error",
+                "Please select a valid MTExec.exe location"
+            )
+            return
+            
+        if not tracker_url:
+            messagebox.showerror(
+                "Error",
+                "Please enter the Working Tracker URL"
+            )
+            return
+            
+        # Save settings
+        settings = {
+            'mtexec_path': mtexec_path,
+            'working_tracker_url': tracker_url
+        }
+        
+        with open('settings.json', 'w') as f:
+            json.dump(settings, f, indent=4)
+            
+        dialog.destroy()
+        messagebox.showinfo(
+            "Setup Complete",
+            "Initial configuration completed successfully!\n\n"
+            "EC0 File Buddy is ready to use."
+        )
+        
+    def run(self):
+        """Start the application"""
+        try:
+            # Check for updates when app starts
+            self.version_checker.check_for_updates()
+            self.root.mainloop()
+        except Exception as e:
+            self.logger.error(f"Application error: {str(e)}")
+            messagebox.showerror("Error", f"Application error: {str(e)}")
+        finally:
+            # Your existing cleanup code...
+            pass            
+                
+ 
     def find_similar_box_numbers(self, target_num, pickup_folder_path, matched_boxes):
         """Find similar box numbers in EC0 files within a pickup folder"""
         try:
@@ -1101,7 +1266,38 @@ class TrafficProcessor:
         # Configure main window to be fully responsive
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
-        add_settings_menu(self.root, self.settings_manager)
+        # Create menubar
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        # Create Settings menu
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+
+        # Add menu items
+        settings_menu.add_command(
+            label="Set Working Tracker",
+            command=lambda: WorkingTrackerDialog(self.root, self.settings_manager)
+        )
+
+        settings_menu.add_command(
+            label="Set MTExec Path",
+            command=lambda: MTExecPathDialog(self.root, self.settings_manager)
+        )
+
+        # Add separator and About option
+        settings_menu.add_separator()
+        settings_menu.add_command(
+            label="About",
+            command=lambda: messagebox.showinfo(
+                "About Ec0 File Buddy",
+                f"Version: {VERSION}\n\n" +
+                "Created by Mark Salhany\n" +
+                "For IDAX Data Solutions\n\n" +
+                "For support: mark.salhany@idaxdata.com\n\n"
+                "Have a great day!"
+            )
+        )
 
         # Configure styles for headers
         style = ttk.Style()
@@ -2214,6 +2410,9 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
             messagebox.showerror("Error", "Please select a project folder")
             return
 
+        missing_box_warnings = []
+        duplicate_box_warnings = []
+
         self.update_status("\nScanning project structure...")
 
         ec0_path = os.path.join(self.folder_path.get(), "ec0")
@@ -2277,14 +2476,20 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
         self.update_status("\nAttempting to match ec0 files to sites:", tag='header')
         self.update_status("")
         for _, site in needs_processing.iterrows():
-            nb_box = self.normalize_box_number(str(site.get('NB/EB TUBE', '')))
-            sb_box = self.normalize_box_number(str(site.get('SB/WB TUBE', '')))
+            map_num = site.get('Map #', '').strip()
+            nb_box = self.normalize_box_number(str(site.get('NB/EB TUBE', '')).strip())
+            sb_box = self.normalize_box_number(str(site.get('SB/WB TUBE', '')).strip())
             
-            if not nb_box and not sb_box:
-                self.status.insert('end', f"Map #{site['Map #']}", ('bold',))
-                self.update_status(f" - No box numbers added for this site on the Google Sheet")
-                continue
-                
+            # no box num check
+            if not sb_box and not nb_box:
+                missing_box_warnings.append(f"Map #{map_num} has no box numbers")
+            
+            # duplicate box num check:
+            if nb_box and sb_box and nb_box == sb_box:
+                duplicate_box_warnings.append(
+                    f"Map #{map_num} has the same box number ({nb_box}) in both NB/EB and SB/WB fields"
+                )
+                      
             is_twin = bool(nb_box and sb_box)
             box_text = f"(Boxes {nb_box}/{sb_box})" if is_twin else f"(Box {nb_box or sb_box})"
             set_type = "Twin set" if is_twin else "Single set"
@@ -2301,20 +2506,6 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                 
             self.status.insert('end', f"Map #{site['Map #']}", ('bold',))
             self.update_status(f" - {set_type} {box_text}{folder_text}")
-
-        # Validate one-way configurations first
-        for _, site in needs_processing.iterrows():
-            nb_box = self.normalize_box_number(str(site.get('NB/EB TUBE', '')).strip())
-            sb_box = self.normalize_box_number(str(site.get('SB/WB TUBE', '')).strip())
-            is_one_way = site.get('One Way', '').lower() == 'yes'
-            
-            if not nb_box and sb_box and not is_one_way:
-                self.update_status(f"\nWarning: Map #{site['Map #']} has only SB/WB box but is not marked as one-way.", tag='warning')
-                continue
-            
-            if not sb_box and not nb_box:
-                self.update_status(f"\nWarning: Map #{site['Map #']} has no box numbers.", tag='warning')
-                continue
 
         # Initialize lists for tracking matches
         fully_matched_sites = []
@@ -2367,7 +2558,7 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                     'sb_box': sb_box
                 })
 
-       # Display results grouped by folder group
+        # Display results grouped by folder group
         self.update_status("\nMATCHED SITES:", tag='success_header')
         self.update_status("")
         if len(groups) > 1:  # Only show group headers if there are multiple groups
@@ -2416,19 +2607,7 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                 
                 # Add blank line between sites
                 self.update_status("")
-
-        # Add matched boxes tracking HERE - before partially matched sites
-        matched_boxes = set()
-        for site in fully_matched_sites:
-            if 'primary_file' in site:
-                box = self.extract_box_number(site['primary_file'])
-                if box:
-                    matched_boxes.add(box)
-            if 'twin_file' in site and site['twin_file']:
-                box = self.extract_box_number(site['twin_file'])
-                if box:
-                    matched_boxes.add(box)
-            
+        
         # Partially matched sites
         if partially_matched_sites:
             self.update_status("\nPARTIALLY MATCHED SITES:", tag='partial_header')
@@ -2436,6 +2615,9 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                 self.update_status("")  # Add space between entries
                 self.status.insert('end', f"  Map #{site['site']}", ('bold',))
                 self.update_status(f" - {site['street']}")
+                
+                # Get the relevant pickup folder where we found the matching file
+                pickup_folder = os.path.dirname(site['primary_path'])
                 
                 # Determine which box was found and which is missing
                 nb_box = self.normalize_box_number(str(site['site_info'].get('NB/EB TUBE', '')))
@@ -2446,35 +2628,23 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                     if found_box == nb_box:
                         self.update_status(f"    Found EC0 file for NB/EB - Box {nb_box}")
                         self.update_status(f"    Missing EC0 file for SB/WB - Box {sb_box}")
-                        # Check for similar numbers
-                        for folder in pickup_folders:
-                            similar_matches = self.find_similar_box_numbers(sb_box, folder['path'], matched_boxes)
+                        # Only look for unmatched similar boxes in the same folder
+                        if sb_box not in matched_boxes:  # Only if the missing box isn't matched elsewhere
+                            similar_matches = self.find_similar_box_numbers(sb_box, pickup_folder, matched_boxes)
                             if similar_matches:
-                                self.update_status(f"    Similar unmatched box numbers found in {folder['name']}:", tag='info')
+                                self.update_status(f"    Similar box numbers found in {site['pickup_folder_name']}:", tag='info')
                                 for match in similar_matches[:3]:
                                     self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
                     else:
                         self.update_status(f"    Found EC0 file for SB/WB - Box {sb_box}")
                         self.update_status(f"    Missing EC0 file for NB/EB - Box {nb_box}")
-                        # Check for similar numbers
-                        for folder in pickup_folders:
-                            similar_matches = self.find_similar_box_numbers(nb_box, folder['path'], matched_boxes)
+                        # Only look for unmatched similar boxes in the same folder
+                        if nb_box not in matched_boxes:  # Only if the missing box isn't matched elsewhere
+                            similar_matches = self.find_similar_box_numbers(nb_box, pickup_folder, matched_boxes)
                             if similar_matches:
-                                self.update_status(f"    Similar box numbers found in {folder['name']}:", tag='info')
+                                self.update_status(f"    Similar box numbers found in {site['pickup_folder_name']}:", tag='info')
                                 for match in similar_matches[:3]:
                                     self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
-  
-        # Add matched boxes tracking right before unmatched sites section
-        matched_boxes = set()
-        for site in fully_matched_sites:
-            if 'primary_file' in site:
-                box = self.extract_box_number(site['primary_file'])
-                if box:
-                    matched_boxes.add(box)
-            if 'twin_file' in site and site['twin_file']:
-                box = self.extract_box_number(site['twin_file'])
-                if box:
-                    matched_boxes.add(box)
 
         # Show unmatched sites      
         if unmatched_sites:
@@ -2491,91 +2661,41 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                     # Check for similar box numbers in all pickup folders
                     for folder in pickup_folders:
                         if site['nb_box']:
-                            # Split box numbers if they contain separators
-                            box_numbers = re.split(r'[/|,]\s*', site['nb_box'])
-                            box_numbers = [num.strip() for num in box_numbers]
-                            
-                            # If multiple box numbers, check for exact matches first
-                            if len(box_numbers) > 1:
-                                matches = []
-                                for box_num in box_numbers:
-                                    for ec0_file in os.listdir(folder['path']):
-                                        if ec0_file.upper().endswith('.EC0'):
-                                            file_box = self.extract_box_number(ec0_file)
-                                            if file_box == box_num:
-                                                matches.append((box_num, ec0_file))
-                                
-                                if len(matches) > 1:
-                                    self.update_status(f"    Multiple EC0 files found for NB/EB direction at Map #{site['title']}", tag='warning')
-                                    for box_num, ec0_file in matches:
-                                        self.update_status(f"      • Box {box_num} ({ec0_file})", tag='success')
-                            else:
-                                # Original similar box number logic
-                                similar_matches = self.find_similar_box_numbers(box_numbers[0], folder['path'], matched_boxes)
-                                if similar_matches:
-                                    self.update_status(f"    Similar box numbers found in {folder['name']}:", tag='info')
-                                    for match in similar_matches[:3]:
-                                        self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
+                            similar_matches = self.find_similar_box_numbers(site['nb_box'], folder['path'], matched_boxes)
+                            if similar_matches:
+                                self.update_status(f"    Similar box numbers found in {folder['name']}:", tag='info')
+                                for match in similar_matches[:3]:
+                                    self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
 
-                        # Same logic for SB/WB (rest of your existing code)
                         if site['sb_box']:
-                            box_numbers = re.split(r'[/|,]\s*', site['sb_box'])
-                            box_numbers = [num.strip() for num in box_numbers]
-                            
-                            if len(box_numbers) > 1:
-                                matches = []
-                                for box_num in box_numbers:
-                                    for ec0_file in os.listdir(folder['path']):
-                                        if ec0_file.upper().endswith('.EC0'):
-                                            file_box = self.extract_box_number(ec0_file)
-                                            if file_box == box_num:
-                                                matches.append((box_num, ec0_file))
-                                
-                                if len(matches) > 1:
-                                    self.update_status(f"    Multiple EC0 files found for SB/WB direction at Map #{site['title']}", tag='warning')
-                                    for box_num, ec0_file in matches:
-                                        self.update_status(f"      • Box {box_num} ({ec0_file})", tag='success')
-                            else:
-                                similar_matches = self.find_similar_box_numbers(box_numbers[0], folder['path'], matched_boxes)
-                                if similar_matches:
-                                    self.update_status(f"    Similar box numbers found in {folder['name']}:", tag='info')
-                                    for match in similar_matches[:3]:
-                                        self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
+                            similar_matches = self.find_similar_box_numbers(site['sb_box'], folder['path'], matched_boxes)
+                            if similar_matches:
+                                self.update_status(f"    Similar box numbers found in {folder['name']}:", tag='info')
+                                for match in similar_matches[:3]:
+                                    self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
 
-                        # Same logic for SB/WB
-                        if site['sb_box']:
-                            box_numbers = re.split(r'[/|,]\s*', site['sb_box'])
-                            box_numbers = [num.strip() for num in box_numbers]
-                            
-                            if len(box_numbers) > 1:
-                                matches = []
-                                for box_num in box_numbers:
-                                    for ec0_file in os.listdir(folder['path']):
-                                        if ec0_file.upper().endswith('.EC0'):
-                                            file_box = self.extract_box_number(ec0_file)
-                                            if file_box == box_num:
-                                                matches.append((box_num, ec0_file))
-                                
-                                if len(matches) > 1:
-                                    self.update_status(f"    Multiple EC0 files found for SB/WB direction at Map #{site['title']}", tag='warning')
-                                    for box_num, ec0_file in matches:
-                                        self.update_status(f"      • Box {box_num} ({ec0_file})", tag='success')
-                            else:
-                                similar_matches = self.find_similar_box_numbers(box_numbers[0], folder['path'], matched_boxes)
-                                if similar_matches:
-                                    self.update_status(f"    SB/WB Box {box_numbers[0]} - Possible matches in {folder['name']}:", tag='warning')
-                                    for match in similar_matches[:3]:
-                                        self.update_status(f"      • Box {match['box']} ({match['file']})", tag='info')
-
-
+        # Show additional warnings
+        if missing_box_warnings or duplicate_box_warnings:
+            self.update_status("\nADDITIONAL WARNINGS:", tag='warning_header')
+            
+            if missing_box_warnings:
+                self.update_status("")
+                self.update_status("Sites with no box numbers:", tag='warning')
+                for warning in missing_box_warnings:
+                    self.update_status(f"  • {warning}", tag='warning')
+                    
+            if duplicate_box_warnings:
+                self.update_status("")
+                self.update_status("Sites with duplicate box numbers:", tag='warning')
+                for warning in duplicate_box_warnings:
+                    self.update_status(f"  • {warning}", tag='warning')  
+                    
         # Store matched files and update site parameters
         self.ec0_files = fully_matched_sites
         if fully_matched_sites:
             self.update_status("\nLoading Site Parameters...")
-            self.update_status(f"Number of sites to load: {len(fully_matched_sites)}")
-            # Debug logging
-            for site in fully_matched_sites:                
-                self.config_frame.populate_files(self.ec0_files)
+            self.update_status(f"Number of sites loaded: {len(fully_matched_sites)}")
+            self.config_frame.populate_files(self.ec0_files)
         else:
             self.update_status("No files matched for processing.")
 
@@ -2614,7 +2734,7 @@ Contact Mark Salhany at mark.salhany@idaxdata.com
                     time.sleep(0.1)
                     return True
 
-                time.sleep(0.05)
+                time.sleep(0.1)
 
             if image_name in important_actions:
                 self.update_status(f"Failed to {important_actions[image_name].lower()}", tag='warning')
