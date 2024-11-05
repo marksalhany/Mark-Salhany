@@ -41,7 +41,7 @@ class VersionChecker:
     def __init__(self):
         self.version = VERSION  # Your current version constant
         self.last_check_file = "last_update_check.json"
-        self.update_url = "https://api.github.com/repos/YOUR_USERNAME/EC0FileBuddy/releases/latest"
+        self.update_url = "https://github.com/marksalhany/Mark-Salhany/blob/da1fa677495d9beaf408389bf70e4f6488771514/ec0buddy.py"
         # Or use any other URL where you'll host version info
         
     def should_check_updates(self):
