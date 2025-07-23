@@ -1,0 +1,358 @@
+{
+  "latest_version": "1.3.2",
+  "min_supported": "1.0.0",
+  "release_date": "2025-07-23",
+  "notes": "Stability sweep, polished changelog UI, startup banner, and explicit up-to-date notices.",
+  "changelog": [
+    {
+      "version": "1.3.2",
+      "date": "2025-07-23",
+      "changes": [
+        "Introduced a startup banner that instantly tells users if they’re current or need to ping Mark.",
+        "Rewrote the changelog viewer: full-height scrollbar, newest-first, clean typography.",
+        "Refined EC0 file-loading helpers and eliminated indentation weirdness in that block.",
+        "General polish pass on image-matching tolerances and error screenshots for multi-PC rollout."
+      ]
+    },
+    {
+      "version": "1.3.1",
+      "date": "2025-07-21",
+      "changes": [
+		 "Centralized load-dialog close detection to one helper; fewer magic sleeps, more deterministic waits."
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "date": "2025-07-18",
+      "changes": [
+        "Finalized robust Save As overwrite logic across all modes (Bellevue, Cities/Speed, Standard).",
+        "Added double-check after save to ensure the dialog truly closed (prevents silent failures).",
+        "Small UI nits: cleaned up tag colors, consistent success/warning headers in the status pane."
+      ]
+    },
+    {
+      "version": "1.2.9",
+      "date": "2025-07-10",
+      "changes": [
+        "Sequential vs simultaneous twin loading exposed as a checkbox; both paths stabilized.",
+        "Refactored dialog activation flows—each window is re-activated before we poke it.",
+        "More graceful degradation if Report Vortex or Profile windows lag out for a second."
+      ]
+    },
+    {
+      "version": "1.2.8",
+      "date": "2025-06-28",
+      "changes": [
+        "Expanded retry logic for image recognition using grayscale + color attempts in order.",
+        "Better exception grouping: we now distinguish TimeoutError from activation errors for clarity.",
+        "Added small dynamic_sleep bursts where needed; removed several unconditional time.sleep() calls."
+      ]
+    },
+    {
+      "version": "1.2.7",
+      "date": "2025-06-18",
+      "changes": [
+        "Cleaned up the SiteConfigFrame scroll behavior so horizontal drag doesn’t nuke vertical scroll.",
+        "Ctrl+D drag-down made smarter: skips disabled rows and preserves read-only cells.",
+        "Improved Set All Begin Date so it respects individual-only sites and Cities/Speed constraints."
+      ]
+    },
+    {
+      "version": "1.2.6",
+      "date": "2025-06-07",
+      "changes": [
+        "Profile → Advanced → Speed tab click now verifies the ACTIVE tab image before proceeding.",
+        "Injected short stabilization pauses after each locateOnScreen to let UI repaint.",
+        "Added emergency screenshots on any speed-tab failure for quick remote debugging."
+      ]
+    },
+    {
+      "version": "1.2.5",
+      "date": "2025-05-29",
+      "changes": [
+        "Bellevue exclusion-day clicks converted to relative offsets anchored off 'Clear All'.",
+        "Exclusion dialog OK is keyboarded for reliability across weird theme variants.",
+        "Post-exclusion focus reset ensures Time Range and Profile windows receive input again."
+      ]
+    },
+    {
+      "version": "1.2.4",
+      "date": "2025-05-24",
+      "changes": [
+        "Processing thread now exposes Pause/Resume/Stop buttons that actually control flow.",
+        "Timer + sites/minute stat added to footer for team performance bragging rights.",
+        "Safeguard: after thread ends, timer cancels itself to avoid Tk after() zombies."
+      ]
+    },
+    {
+      "version": "1.2.3",
+      "date": "2025-05-15",
+      "changes": [
+        "Date Processing dropdown: Last Seven Aligned, First Two, etc. hooked into Time Range dialog.",
+        "Manual mode now auto-disables Auto Wrap and then calls adjust_time_range().",
+        "All date hotkeys (Ctrl+F/L) wrapped with short sleeps to allow menu focus to shift."
+      ]
+    },
+    {
+      "version": "1.2.2",
+      "date": "2025-05-05",
+      "changes": [
+        "Better one-way validation: sites missing NB/EB but marked one-way are allowed again.",
+        "Sheet row updates (READY TO PROCESS) moved to post-regular pass to avoid premature flags.",
+        "Improved warning tags when sheet row index is missing or invalid."
+      ]
+    },
+    {
+      "version": "1.2.1",
+      "date": "2025-04-26",
+      "changes": [
+        "Speed slider (0.1×–3.0×) wired into dynamic_sleep and some pyautogui intervals.",
+        "Label next to slider live-updates, so users see the exact multiplier.",
+        "Removed a bunch of magic constants for sleeps; most now scale with speed_factor."
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2025-04-15",
+      "changes": [
+        "Added NS0 → PRN processing path with a dedicated profile name field and vortex-init toggle.",
+        "Hardened Next/OK navigation in the Datasets window with a keyboard fallback that actually works.",
+        "Better logging context (site ids in every warning/error about stuck dialogs or missing windows)."
+      ]
+    },
+    {
+      "version": "1.1.9",
+      "date": "2025-04-06",
+      "changes": [
+        "UI polish: header fonts standardized, better spacing in menubar & config sections.",
+        "'Help Guide' button stubbed and ready; actual doc wired in a later patch.",
+        "Fifteen small code cleanups (PEP8-ish): fewer trailing spaces and duplicate imports."
+      ]
+    },
+    {
+      "version": "1.1.8",
+      "date": "2025-03-31",
+      "changes": [
+        "Auto-kill leftover MTExec processes before relaunch, with terminate() then kill() escalation.",
+        "Stability boost for teams running 20+ sites in a single batch without human intervention.",
+        "Detailed logs now list how many windows were closed/killed during restarts."
+      ]
+    },
+    {
+      "version": "1.1.7",
+      "date": "2025-03-26",
+      "changes": [
+        "‘Confirm Save As’ dialog flow stabilized—no more stuck boxes on overwrite in network drives.",
+        "If overwrite fails, we try an alternate name automatically (appends _2, _3, etc.).",
+        "Improved error text so users know *which* file name failed."
+      ]
+    },
+    {
+      "version": "1.1.6",
+      "date": "2025-03-20",
+      "changes": [
+        "Exception logging standardized: always include traceback for dev builds.",
+        "Generic catch blocks now rethrow with richer context instead of 'Something went wrong'.",
+        "Status bar prints friendly summaries while the log file keeps the nerdy details."
+      ]
+    },
+    {
+      "version": "1.1.5",
+      "date": "2025-03-15",
+      "changes": [
+        "Time Range dialog navigation scripted with fewer assumptions about tab order.",
+        "Fixed a race where Auto Wrap dropdown didn't register the first time on slow PCs.",
+        "Small UX: status bar now calls out which date option was picked per site."
+      ]
+    },
+    {
+      "version": "1.1.4",
+      "date": "2025-03-10",
+      "changes": [
+        "SiteConfigFrame now rebuilds cleanly when you rescan a project (no ghost widgets).",
+        "Headers got tooltips explaining what each column means—new folks stop asking.",
+        "Begin/End date cells gained arrow buttons and a Set All for bulk nudges."
+      ]
+    },
+    {
+      "version": "1.1.3",
+      "date": "2025-03-05",
+      "changes": [
+        "Google Sheet write-back (status updates) guarded by try/except; failures no longer abort processing.",
+        "Row index parsing hardened: blank / \"nan\" / floats all get handled.",
+        "Explicit warnings in the UI when a sheet update can't be done, so users aren’t blind."
+      ]
+    },
+    {
+      "version": "1.1.2",
+      "date": "2025-02-28",
+      "changes": [
+        "DPI-awareness added via ctypes.windll so clicks land where they should on 125%/150% scaling.",
+        "Fallback if DPI calls fail—logs a warning but still runs.",
+        "Minor: pyautogui.PAUSE lowered for snappier overall response."
+      ]
+    },
+    {
+      "version": "1.1.1",
+      "date": "2025-02-24",
+      "changes": [
+        "First full-team test build; multiple PCs revealed timing issues—added tons of micro-pauses.",
+        "Image assets reorganized under /images/branding and /images/buttons for sanity.",
+        "Helped track down that one mysterious missing PNG by adding explicit file existence checks."
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2025-02-15",
+      "changes": [
+        "Initial PyInstaller EXE build (ec0.spec) + icon baked in.",
+        "datas[] configured so images and JSON config files ship with the binary.",
+        "Quick fix: working directory set on startup to handle frozen vs dev paths."
+      ]
+    },
+    {
+      "version": "1.0.6",
+      "date": "2025-02-08",
+      "changes": [
+        "Individual report pass implemented (Needs Individual / Individual Only checkboxes).",
+        "Separate success/failure arrays for regular vs individual phases for better summaries.",
+        "UI now disables irrelevant individual toggles for Bellevue/NS0 modes."
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "date": "2025-01-30",
+      "changes": [
+        "One-way processing nailed down: Direction & Lane Filter scripted with proper NB/SB choices.",
+        "Profile window is re-activated after closing Direction/Lane to avoid 'lost focus' presses.",
+        "Speed-limit field required only for Cities/Speed mode; warning if blank."
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "date": "2025-01-24",
+      "changes": [
+        "Cities/Speed mode: speed tab automation and default speed entry workflow.",
+        "Auto-move cursor relative to current position to hit the default speed box reliably.",
+        "Error if speed limit missing—prevents silently wrong stats."
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "date": "2025-01-18",
+      "changes": [
+        "Bellevue mode prototype: second pass with Tue–Thu excluded, save as .1 file.",
+        "Relative clicking offsets measured on Mark’s machine; exposed constants for easy tuning.",
+        "Retry logic for Clear All anchor if the first locateOnScreen fails."
+      ]
+    },
+    {
+      "version": "1.0.2",
+      "date": "2025-01-12",
+      "changes": [
+        "Status Text widget got colored tags (warning, success, etc.) for quick scanning.",
+        "Added a tiny 🐈 button -- nani desu ka?",
+        "Help button stubbed to eventually load a markdown/html guide."
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "2025-01-06",
+      "changes": [
+        "Scrolling SiteConfigFrame built with a canvas + inner frame; large projects no longer explode the window.",
+        "Headers stay visible; content scrolls—users stop losing track of columns.",
+        "Auto-width columns scaled to character counts instead of black magic numbers."
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2024-12-28",
+      "changes": [
+        "Regular EC0 processing fully automated start-to-finish on Mark’s machine.",
+        "Datasets → Load File → Vortex → Profile → Save path locked in with sleeps and hotkeys.",
+        "Basic error popups instead of silent failures."
+      ]
+    },
+    {
+      "version": "0.9.0",
+      "date": "2024-12-20",
+      "changes": [
+        "GUI shell built: Load Sheet, Browse Folder, Scan Files, Process Files buttons.",
+        "Settings dialogs for MTExec path + Working Tracker URL.",
+        "Study length combobox + initial day checkboxes wired (unused but future-proofed)."
+      ]
+    },
+    {
+      "version": "0.8.0",
+      "date": "2024-12-12",
+      "changes": [
+        "Google Sheets API wired up with service account—pulls Map #, tubes, etc.",
+        "Matched EC0 filenames to sheet rows; started building the SiteConfig grid.",
+        "First pass at updating sheet Status after processing."
+      ]
+    },
+    {
+      "version": "0.7.0",
+      "date": "2024-12-05",
+      "changes": [
+        "Proto GUI replaced the CLI: Tkinter window with a log textbox and a couple of buttons.",
+        "Early image-based clicks in MTExec proved this could work—rough but functional.",
+        "Hard-coded sleeps everywhere (later replaced)."
+      ]
+    },
+    {
+      "version": "0.6.0",
+      "date": "2024-11-30",
+      "changes": [
+        "First successful run of regular processing (one site) end-to-end via pyautogui.",
+        "Manual tuning of every pause to get past Load dialog and Vortex selection.",
+        "Saved to a fixed filename just to prove the pipeline works."
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "2024-11-26",
+      "changes": [
+        "Added pandas-based EC0 scan that extracts site info stub (Map, site, etc.) from filenames.",
+        "Started logging to file using Python logging module.",
+        "Began thinking about two passes (regular vs individual) conceptually."
+      ]
+    },
+    {
+      "version": "0.4.0",
+      "date": "2024-11-20",
+      "changes": [
+        "Broke code into classes: SettingsManager, TrafficProcessor skeleton drafted.",
+        "settings.json introduced so MTExec path isn’t hard-coded permanently.",
+        "Early ToolTip utility so controls could explain themselves without giant docs."
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "date": "2024-11-14",
+      "changes": [
+        "Rough Tkinter prototype window with just a few labels and buttons.",
+        "Read EC0 directory, listed files in a textbox for manual copy/paste to MTExec.",
+        "Started experimenting with pyautogui hotkeys."
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2024-11-10",
+      "changes": [
+        "Command-line script that looped EC0 files and printed basic stats.",
+        "Manual instructions in comments for how to load files into MTExec.",
+        "Hard-coded MTExec path and zero error handling—just proof of concept."
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2024-11-06",
+      "changes": [
+        "Initial commit: skeletal idea to automate EC0 processing for IDAX.",
+        "Read a single EC0, opened MTExec manually—no automation yet.",
+        "Laid down the folder structure and git repo."
+      ]
+    }
+  ]
+}
